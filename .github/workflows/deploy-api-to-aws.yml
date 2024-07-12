@@ -18,7 +18,7 @@ jobs:
               with:
                 cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
             - run: terraform init
-            - run: terraform plan -input=false
+            - run: terraform plan -input=false -target=aws_ecr_repository.my-tf-images
             - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false 
             - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
             - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
