@@ -92,7 +92,7 @@ resource "aws_iam_role" "my-ecr-iam-role" {
 #   policy_arn = aws_iam_policy.CreateServiceLinkedRole-policy.arn
 # }
 
-# resource "aws_iam_instance_profile" "my-tf-ecr-ec2-profile" {
-#   name = "${var.app_name}-ecr-ec2-profile"
-#   role = aws_iam_role.my-ecr-iam-role.name
-# }
+resource "aws_iam_instance_profile" "my-tf-ecr-ec2-profile" {
+  name = "${var.app_name}-ecr-ec2-profile"
+  role = aws_iam_role.my-ecr-iam-role.name
+}
