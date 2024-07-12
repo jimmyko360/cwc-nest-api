@@ -1,0 +1,27 @@
+name: Deploy NestJS API to AWS with Terraform
+run-name: ${{ github.actor }} is deploying to AWS with Terraform
+on: [push]
+env:
+  AWS_REGION: us-east-1
+jobs:
+    Create-ECR:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ env.AWS_REGION }}
+            - run: cd terraform
+            - uses: hashicorp/setup-terraform@v1
+              with:
+                cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+            - run: terraform init
+            - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false 
+            - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
+            - run: cd ..            
+            - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
+            - run: docker build -t ${{ vars.ECR_URL }}
+            - run: docker push ${{ vars.ECR_URL }}
