@@ -19,6 +19,7 @@ jobs:
               with:
                 cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
             - run: terraform init
+            - run: terraform plan -input=false
             - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false 
             - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
             - run: cd ..            
