@@ -31,5 +31,5 @@ jobs:
               env:
                 GH_TOKEN: ${{ secrets.FINE_GRAINED_TOKEN }}
             - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
-            - run: docker build -t ${{ vars.ECR_URL }}
+            - run: docker build -t ${{ vars.ECR_URL }} .
             - run: docker push ${{ vars.ECR_URL }}
