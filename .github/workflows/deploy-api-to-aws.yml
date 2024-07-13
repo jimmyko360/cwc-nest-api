@@ -3,10 +3,12 @@ run-name: ${{ github.actor }} is deploying to AWS with Terraform
 on: [push]
 env:
   AWS_REGION: us-east-1
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
     Create-ECR:
         runs-on: ubuntu-latest
+        # permissions:
+        #     actions: write
         steps:
             - uses: actions/checkout@v4
             # - name: Configure AWS credentials
@@ -26,6 +28,8 @@ jobs:
             - run: terraform plan -input=false -target=aws_ecr_repository.my-tf-images
             - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false
             - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
+              env:
+                GH_TOKEN: ${{ github.token }}
             - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
             - run: docker build -t ${{ vars.ECR_URL }}
             - run: docker push ${{ vars.ECR_URL }}
