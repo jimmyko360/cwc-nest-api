@@ -3,6 +3,7 @@ run-name: ${{ github.actor }} is deploying to AWS with Terraform
 on: [push]
 env:
   AWS_REGION: us-east-1
+  GH_TOKEN: ${{ github.token }}
 jobs:
     Create-ECR:
         runs-on: ubuntu-latest
