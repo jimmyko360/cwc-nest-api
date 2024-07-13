@@ -15,16 +15,16 @@ jobs:
             #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
             #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             #     aws-region: ${{ env.AWS_REGION }}
-            - run : |
-                export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-                export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                export AWS_REGION=${{ env.AWS_REGION }}
+            # - run : |
+            #     export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            #     export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            #     export AWS_REGION=${{ env.AWS_REGION }}
             - uses: hashicorp/setup-terraform@v1
               with:
                 cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
             - run: terraform init
             - run: terraform plan -input=false -target=aws_ecr_repository.my-tf-images
-            - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false 
+            - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false
             - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
             - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
             - run: docker build -t ${{ vars.ECR_URL }}
