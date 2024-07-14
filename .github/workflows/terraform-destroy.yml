@@ -1,0 +1,14 @@
+name: Destroy Terraform Infrastructure
+run-name: ${{ github.actor }} is running Terraform Destroy
+on: [workflow_dispatch]
+jobs:
+    Terraform-Destroy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: hashicorp/setup-terraform@v1
+              with:
+                cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+                terraform_wrapper: false
+            # - run: terraform init
+            - run: terraform destroy -auto-approve -input=false
