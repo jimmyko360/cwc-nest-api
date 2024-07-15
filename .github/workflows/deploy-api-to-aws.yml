@@ -29,6 +29,13 @@ jobs:
             - run: terraform apply -auto-approve -input=false
             - run: terraform output -raw instance_1_ID | gh secret set INSTANCE_1_ID
             - run: terraform output -raw instance_2_ID | gh secret set INSTANCE_2_ID
-            - run: sudo apt-get install -y expect
-            - run: unbuffer aws ssm start-session --target=${{ secrets.INSTANCE_1_ID }}
-            - run: pwd
+            - run: |
+                      aws ssm send-command\
+                        --document-name="AWS-RunShellScript"\
+                        --targets '[{"Key":"InstanceIds","Values":[${{  secrets.INSTANCE_1_ID }}, ${{  secrets.INSTANCE_2_ID }}]}]'\
+                        --parameters '{"commands":[\
+                          "#!/bin/bash",\
+                          "sudo yum install docker -y",\
+                          "sudo service docker start",\
+                          "sudo docker pull 105924135715.dkr.ecr.us-east-1.amazonaws.com/jyk-tf-images",\
+                          "sudo docker run -dp 80:3000 105924135715.dkr.ecr.us-east-1.amazonaws.com/jyk-tf-images"]}'
