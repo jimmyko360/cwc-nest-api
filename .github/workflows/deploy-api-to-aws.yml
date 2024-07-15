@@ -29,5 +29,5 @@ jobs:
             - run: terraform apply -auto-approve -input=false
             - run: terraform output -raw instance_1_ID | gh secret set INSTANCE_1_ID
             - run: terraform output -raw instance_2_ID | gh secret set INSTANCE_2_ID
-            - run: aws ssm start-session --target=${{ secrets.INSTANCE_1_ID }}
+            - run: unbuffer aws ssm start-session --target=${{ secrets.INSTANCE_1_ID }}
             - run: pwd
