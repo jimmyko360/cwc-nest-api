@@ -27,17 +27,29 @@ jobs:
             - run: docker build -t ${{ vars.ECR_URL }} .
             - run: docker push ${{ vars.ECR_URL }}
             - run: terraform apply -auto-approve -input=false
-            - run: terraform output -raw instance_1_ID | gh secret set INSTANCE_1_ID
-            - run: terraform output -raw instance_2_ID | gh secret set INSTANCE_2_ID
-            - run: aws ec2 describe-instances --filters "Name=instance-id,Values=${{ secrets.INSTANCE_1_ID }}" --query 'Reservations[0].Instances[0].State.Name' | gh variable set INSTANCE_1_STATE
-            - run: aws ec2 describe-instances --filters "Name=instance-id,Values=${{ secrets.INSTANCE_2_ID }}" --query 'Reservations[1].Instances[0].State.Name' | gh variable set INSTANCE_2_STATE
-            - name: Wait for EC2 to be running
+            - name: Get EC2 ID'S
+              id: get_ids
+              run: |
+                INSTANCE_ID1=$(terraform output -raw instance_1_ID)
+                INSTANCE_ID2=$(terraform output -raw instance_2_ID)
+                echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                echo "::set-output name=instance_id2::$INSTANCE_ID2"
+            - name: Wait for EC2 instances to be running
               id: wait_for_ec2
               run: |
-                echo "Waiting for EC2 instance $INSTANCE_ID to be in 'running' state..."
-                while state=$(aws ec2 describe-instances --filters "Name=instance-id,Values=${{ secrets.INSTANCE_1_ID }}" --query 'Reservations[0].Instances[0].State.Name' --output text); test "$state" != "running"; do
-                  echo "Instance state: $state. Waiting..."
-                  sleep 10
+                INSTANCE_ID1=${{ steps.get_ids.outputs.instance_id1 }}
+                INSTANCE_ID2=${{ steps.get_ids.outputs.instance_id2 }}
+                echo "Waiting for EC2 instances $INSTANCE_ID1 and $INSTANCE_ID2 to be in 'running' state..."
+                
+                while true; do
+                    STATE1=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID1 --query 'Reservations[0].Instances[0].State.Name' --output text)
+                    STATE2=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID2 --query 'Reservations[0].Instances[0].State.Name' --output text)
+                    echo "Instance $INSTANCE_ID1 state: $STATE1. Instance $INSTANCE_ID2 state: $STATE2."
+                    
+                    if [ "$STATE1" = "running" ] && [ "$STATE2" = "running" ]; then
+                    echo "Both instances are running."
+                    break
+                    fi
+                    sleep 10
                 done
-                echo "Instance $INSTANCE_ID is now running."
             - run: aws ssm send-command --document-name="AWS-RunShellScript" --targets '[{"Key":"InstanceIds","Values":["${{  secrets.INSTANCE_1_ID }}", "${{  secrets.INSTANCE_2_ID }}"]}]' --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
