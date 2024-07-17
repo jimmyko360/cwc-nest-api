@@ -57,4 +57,4 @@ jobs:
             - run: |
                 INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
-                aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
+                aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ vars.ECR_URL }}","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
