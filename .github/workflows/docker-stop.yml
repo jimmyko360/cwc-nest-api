@@ -1,0 +1,9 @@
+name: Stop NestJS Server Docker Container
+run-name: ${{ github.actor }} is stopping the NestJS server Docker Container
+on: [workflow_dispatch]
+jobs:
+    Docker-Stop:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - run: docker stop $(docker ps -qf name=server)
