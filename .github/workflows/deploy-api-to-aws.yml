@@ -48,8 +48,13 @@ jobs:
                     
                     if [ "$STATE1" = "running" ] && [ "$STATE2" = "running" ]; then
                     echo "Both instances are running."
+                    echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                    echo "::set-output name=instance_id2::$INSTANCE_ID2"
                     break
                     fi
                     sleep 10
                 done
-            - run: aws ssm send-command --document-name="AWS-RunShellScript" --targets '[{"Key":"InstanceIds","Values":["${{  secrets.INSTANCE_1_ID }}", "${{  secrets.INSTANCE_2_ID }}"]}]' --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
+            - run: |
+                INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
+                INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
+                $(aws ssm send-command --document-name="AWS-RunShellScript" --targets '[{"Key":"InstanceIds","Values":[$INSTANCE_ID1,$INSTANCE_ID2]}]' --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}')
