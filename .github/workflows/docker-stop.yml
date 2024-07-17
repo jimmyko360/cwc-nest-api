@@ -1,9 +1,29 @@
 name: Stop NestJS Server Docker Container
 run-name: ${{ github.actor }} is stopping the NestJS server Docker Container
 on: [workflow_dispatch]
+env:
+  AWS_REGION: us-east-1
 jobs:
     Docker-Stop:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - run: docker stop $(docker ps -qf name=server)
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ env.AWS_REGION }}
+            - name: Get EC2 ID'S
+              id: get_ids
+              run: |
+                INSTANCE_ID1=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId')
+                INSTANCE_ID2=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[1].Instances[0].InstanceId')
+                echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                echo "::set-output name=instance_id2::$INSTANCE_ID2"
+            - name: Wait for EC2 instances to be running
+              id: wait_for_ec2
+              run: |
+                INSTANCE_ID1=${{ steps.get_ids.outputs.instance_id1 }}
+                INSTANCE_ID2=${{ steps.get_ids.outputs.instance_id2 }}
+            - run: aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo docker stop $(sudo docker ps -qf name=server)"]}'
