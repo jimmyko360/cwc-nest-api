@@ -29,4 +29,9 @@ jobs:
             - run: terraform apply -auto-approve -input=false
             - run: terraform output -raw instance_1_ID | gh secret set INSTANCE_1_ID
             - run: terraform output -raw instance_2_ID | gh secret set INSTANCE_2_ID
-            - run: aws ssm send-command --document-name="AWS-RunShellScript" --targets '[{"Key":"InstanceIds","Values":["${{  secrets.INSTANCE_1_ID }}", "${{  secrets.INSTANCE_2_ID }}"]}]' --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
+            - id: status-check
+              run: aws ec2 describe-instances --filters "Name=instance-id,Values=[i-0c4f8589723a0144b,i-0835a1ec587bea0f5]" --query 'Reservations[*].Instances[0].State.Name'
+            - if: steps.status-check.outputs[0] != 'running' && steps.status-check.outputs[1] != 'running'
+              run: steps.status-check
+            - if: steps.status-check.outputs[0] == 'running' && steps.status-check.outputs[1] == 'running'
+              run: aws ssm send-command --document-name="AWS-RunShellScript" --targets '[{"Key":"InstanceIds","Values":["${{  secrets.INSTANCE_1_ID }}", "${{  secrets.INSTANCE_2_ID }}"]}]' --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
