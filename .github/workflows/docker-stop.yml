@@ -26,4 +26,4 @@ jobs:
               run: |
                 INSTANCE_ID1=${{ steps.get_ids.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.get_ids.outputs.instance_id2 }}
-            - run: aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo docker stop $(sudo docker ps -qf name=server)"]}'
+                aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo docker stop $(sudo docker ps -qf name=server)"]}'
