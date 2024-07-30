@@ -33,9 +33,10 @@ jobs:
               env:
                 REGISTRY: ${{ steps.ecr-login.outputs.registry }}
                 REPOSITORY: ${{ vars.ECR_NAME }}
+                IMAGE_TAG: latest
               run: |
-                docker build -t $REGISTRY/$REPOSITORY .
-                docker push $REGISTRY/$REPOSITORY
+                docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+                docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
     Deploy-with-Terraform:
         runs-on: ubuntu-latest
         needs: Create-ECR
