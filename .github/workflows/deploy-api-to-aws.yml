@@ -22,10 +22,20 @@ jobs:
             - run: terraform init
             - run: terraform plan -input=false -target=aws_ecr_repository.my-tf-images
             - run: terraform apply -target=aws_ecr_repository.my-tf-images -auto-approve -input=false
-            - run: terraform output -raw ecr_repo_url | gh variable set ECR_URL
-            - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
-            - run: docker build -t ${{ vars.ECR_URL }} .
-            - run: docker push ${{ vars.ECR_URL }}
+            - run: terraform output -raw ecr_repo_name | gh variable set ECR_NAME
+            - name: Log into Amazon ECR
+              id: ecr-login
+              uses: aws-actions/amazon-ecr-login@v2
+            # - run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
+            # - run: docker build -t ${{ vars.ECR_URL }} .
+            # - run: docker push ${{ vars.ECR_URL }}
+            - name: Docker build and push image
+              env:
+                REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+                REPOSITORY: ${{ vars.ECR_NAME }}
+              run: |
+                docker build -t $REGISTRY/$REPOSITORY .
+                docker push $REGISTRY/$REPOSITORY
     Deploy-with-Terraform:
         runs-on: ubuntu-latest
         needs: Create-ECR
@@ -65,13 +75,26 @@ jobs:
                     
                     if [ "$STATE1" = "running" ] && [ "$STATE2" = "running" ]; then
                     echo "Both instances are running."
-                    echo "::set-output name=instance_id1::$INSTANCE_ID1"
-                    echo "::set-output name=instance_id2::$INSTANCE_ID2"
                     break
                     fi
                     sleep 10
                 done
-            - run: |
+            - name: Log into Amazon ECR
+              id: ecr-login
+              uses: aws-actions/amazon-ecr-login@v2
+            - name: Docker pull and run image
+              env:
+                REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+                REPOSITORY: ${{ vars.ECR_NAME }}
+              run: |
                 INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
-                aws ssm send-command --document-name="AWS-RunShellScript" --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 --parameters '{"commands":["#!/bin/bash","sudo yum install docker -y","sudo service docker start","aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ vars.ECR_URL }}","sudo docker pull ${{ vars.ECR_URL }}","sudo docker run -dp 80:3000 --name server ${{ vars.ECR_URL }}"]}'
+                aws ssm send-command \
+                  --document-name="AWS-RunShellScript" \
+                  --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 \
+                  --parameters '{"commands":["#!/bin/bash",
+                    "sudo yum install docker -y",
+                    "sudo service docker start",
+                    "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin $REGISTRY/$REPOSITORY",
+                    "sudo docker pull $REGISTRY/$REPOSITORY",
+                    "sudo docker run -dp 80:3000 --name server $REGISTRY/$REPOSITORY"]}'
