@@ -1,5 +1,5 @@
-output "ecr_repo_url" {
-  value = aws_ecr_repository.my-tf-images.repository_url
+output "ecr_repo_name" {
+  value = aws_ecr_repository.my-tf-images.name
 }
 
 output "alb_dns" {
