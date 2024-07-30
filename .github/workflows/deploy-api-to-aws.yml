@@ -76,6 +76,8 @@ jobs:
                     
                     if [ "$STATE1" = "running" ] && [ "$STATE2" = "running" ]; then
                     echo "Both instances are running."
+                    echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                    echo "::set-output name=instance_id2::$INSTANCE_ID2"
                     break
                     fi
                     sleep 10
