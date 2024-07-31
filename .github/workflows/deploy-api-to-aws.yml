@@ -99,6 +99,6 @@ jobs:
                   --parameters '{"commands":["#!/bin/bash",
                     "sudo yum install docker -y",
                     "sudo service docker start",
-                    "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin $REGISTRY",
-                    "sudo docker pull $REGISTRY/$REPOSITORY:IMAGE_TAG",
-                    "sudo docker run -dp 80:3000 --name server $REGISTRY/$REPOSITORY:IMAGE_TAG"]}'
+                    "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin '$REGISTRY'",
+                    "sudo docker pull '$REGISTRY'/'$REPOSITORY':'$IMAGE_TAG'",
+                    "sudo docker run -dp 80:3000 --name server '$REGISTRY'/'$REPOSITORY':'$IMAGE_TAG'"]}'
