@@ -128,7 +128,10 @@ jobs:
                   --query "Commands[1].Status" \
                   --output text)
 
-                if [ "$status1" = "Success" ] && [ "$status2" = "Success" ]; then
+                echo "status1: $status1"
+                echo "status2: $status2"
+
+                if [ $status1 == "Success" ] && [ $status2 == "Success" ]; then
                   echo "Servers deployed succesfully."
                 else
                   echo "Server deployment failed"  
