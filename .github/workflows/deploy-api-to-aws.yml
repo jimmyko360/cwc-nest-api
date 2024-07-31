@@ -97,8 +97,9 @@ jobs:
                     "sudo yum install docker -y",
                     "sudo service docker start",
                     "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.ecr-login.outputs.registry }}",
+                    "sudo docker stop server || true",
                     "sudo docker pull ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest",
-                    "sudo docker run -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}' \
+                    "sudo docker run --rm -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}' \
                   --query "Command.CommandId" \
                   --output text)
                 echo "::set-output name=command_id::$COMMAND_ID"
