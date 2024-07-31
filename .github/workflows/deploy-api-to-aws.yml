@@ -99,8 +99,8 @@ jobs:
                     "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.ecr-login.outputs.registry }}",
                     "sudo docker pull ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest",
                     "sudo docker run -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}' \
-                  -- query "Command.CommandId" \
-                  -- output text)
+                  --query "Command.CommandId" \
+                  --output text)
                 echo "::set-output name=command_id::$COMMAND_ID"
                 echo "::set-output name=instance_id1::$INSTANCE_ID1"
                 echo "::set-output name=instance_id2::$INSTANCE_ID2"
