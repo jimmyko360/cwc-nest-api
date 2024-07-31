@@ -110,9 +110,11 @@ jobs:
                 COMMAND_ID=${{ steps.run-docker-container.outputs.command_id }}
                 INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
-                aws ssm wait command-executed \
-                  --command-id $COMMAND_ID \
-                  --instance-id $INSTANCE_ID1 || true
+
+                # I guess I only need one of these
+                # aws ssm wait command-executed \
+                #   --command-id $COMMAND_ID \
+                #   --instance-id $INSTANCE_ID1 || true
 
                 aws ssm wait command-executed \
                   --command-id $COMMAND_ID \
