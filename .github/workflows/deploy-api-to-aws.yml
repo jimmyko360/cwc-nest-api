@@ -117,17 +117,17 @@ jobs:
                   --command-id $COMMAND_ID \
                   --instance-id $INSTANCE_ID2 || true
 
-                status1 = $(aws ssm list-commands \
+                status1=$(aws ssm list-commands \
                   --command-id $COMMAND_ID \
                   --query "Commands[0].Status" \
                   --output text)
 
-                status2 = $(aws ssm list-commands \
+                status2=$(aws ssm list-commands \
                   --command-id $COMMAND_ID \
                   --query "Commands[1].Status" \
                   --output text)
 
-                if [ "$status1" = "Success" ] && [ "$status2" = "success" ]; then
+                if [ $status1 = "Success" ] && [ $status2 = "Success" ]; then
                   echo "Servers deployed succesfully."
                 else
                   echo "Server deployment failed"  
