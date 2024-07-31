@@ -75,10 +75,10 @@ jobs:
                     echo "Instance $INSTANCE_ID1 state: $STATE1. Instance $INSTANCE_ID2 state: $STATE2."
                     
                     if [ "$STATE1" = "running" ] && [ "$STATE2" = "running" ]; then
-                    echo "Both instances are running."
-                    echo "::set-output name=instance_id1::$INSTANCE_ID1"
-                    echo "::set-output name=instance_id2::$INSTANCE_ID2"
-                    break
+                      echo "Both instances are running."
+                      echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                      echo "::set-output name=instance_id2::$INSTANCE_ID2"
+                      break
                     fi
                     sleep 10
                 done
@@ -86,10 +86,11 @@ jobs:
               id: ecr-login
               uses: aws-actions/amazon-ecr-login@v2
             - name: Docker pull and run image
+              id: run-docker-container
               run: |
                 INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
-                aws ssm send-command \
+                COMMAND_ID=$(aws ssm send-command \
                   --document-name="AWS-RunShellScript" \
                   --instance-ids $INSTANCE_ID1 $INSTANCE_ID2 \
                   --parameters '{"commands":["#!/bin/bash",
@@ -97,4 +98,38 @@ jobs:
                     "sudo service docker start",
                     "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.ecr-login.outputs.registry }}",
                     "sudo docker pull ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest",
-                    "sudo docker run -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}'
+                    "sudo docker run -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}' \
+                  -- query "Command.CommandId" \
+                  -- output text)
+                echo "::set-output name=command_id::$COMMAND_ID"
+                echo "::set-output name=instance_id1::$INSTANCE_ID1"
+                echo "::set-output name=instance_id2::$INSTANCE_ID2"
+            - name: Check Status of Docker Pull and Docker Run
+              run: |
+                COMMAND_ID=${{ steps.run-docker-container.outputs.command_id }}
+                INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
+                INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
+                aws ssm wait command-executed \
+                  --command-id $COMMAND_ID
+                  --instance-id INSTANCE_ID1 || true
+
+                aws ssm wait command-executed \
+                  --command-id $COMMAND_ID
+                  --instance-id INSTANCE_ID2 || true
+
+                status1 = $(aws ssm list-commands \
+                  --command-id $COMMAND_ID \
+                  --query "Commands[0].Status" \
+                  --output text)
+
+                status2 = $(aws ssm list-commands \
+                  --command-id $COMMAND_ID \
+                  --query "Commands[1].Status" \
+                  --output text)
+
+                if [ "$status1" = "Success" ] && [ "$status2" = "success" ]; then
+                  echo "Servers deployed succesfully."
+                else
+                  echo "Server deployment failed"  
+                  exit 1
+                fi
