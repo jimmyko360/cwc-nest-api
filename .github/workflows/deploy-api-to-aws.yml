@@ -86,10 +86,6 @@ jobs:
               id: ecr-login
               uses: aws-actions/amazon-ecr-login@v2
             - name: Docker pull and run image
-              env:
-                REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-                REPOSITORY: ${{ vars.ECR_NAME }}
-                IMAGE_TAG: latest
               run: |
                 INSTANCE_ID1=${{ steps.wait_for_ec2.outputs.instance_id1 }}
                 INSTANCE_ID2=${{ steps.wait_for_ec2.outputs.instance_id2 }}
@@ -99,6 +95,6 @@ jobs:
                   --parameters '{"commands":["#!/bin/bash",
                     "sudo yum install docker -y",
                     "sudo service docker start",
-                    "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin '$REGISTRY'",
-                    "sudo docker pull '$REGISTRY'/'$REPOSITORY':'$IMAGE_TAG'",
-                    "sudo docker run -dp 80:3000 --name server '$REGISTRY'/'$REPOSITORY':'$IMAGE_TAG'"]}'
+                    "aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.ecr-login.outputs.registry }}",
+                    "sudo docker pull ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest",
+                    "sudo docker run -dp 80:3000 --name server ${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_NAME }}:latest"]}'
